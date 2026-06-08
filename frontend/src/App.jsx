@@ -29,9 +29,11 @@ function App() {
   const [googleRoleForSignup, setGoogleRoleForSignup] = useState('b2c_student');
   const [googleCollegeIdForSignup, setGoogleCollegeIdForSignup] = useState('');
   const [googleDepartmentForSignup, setGoogleDepartmentForSignup] = useState('');
+  const [googleAdminSecretForSignup, setGoogleAdminSecretForSignup] = useState('');
   const googleRoleRef = useRef(googleRoleForSignup);
   const googleCollegeIdRef = useRef(googleCollegeIdForSignup);
   const googleDepartmentRef = useRef(googleDepartmentForSignup);
+  const googleAdminSecretRef = useRef(googleAdminSecretForSignup);
 
   useEffect(() => {
     if (role !== 'b2b_student' && role !== 'college_admin') {
@@ -117,6 +119,7 @@ function App() {
         role: isLogin ? undefined : googleRoleRef.current,
         college_id: !isLogin && (googleRoleRef.current === 'b2b_student' || googleRoleRef.current === 'college_admin') ? googleCollegeIdRef.current || undefined : undefined,
         department: !isLogin && googleRoleRef.current === 'b2b_student' ? googleDepartmentRef.current || undefined : undefined,
+        admin_secret: !isLogin && googleRoleRef.current === 'super_admin' ? googleAdminSecretRef.current || undefined : undefined,
       });
       setUser(loggedInUser);
       setShowGoogleRoleModal(false);
@@ -613,6 +616,8 @@ function App() {
                       googleCollegeIdRef.current = '';
                       setGoogleDepartmentForSignup('');
                       googleDepartmentRef.current = '';
+                      setGoogleAdminSecretForSignup('');
+                      googleAdminSecretRef.current = '';
                     }}
                     style={{
                       width: '100%',
@@ -627,10 +632,41 @@ function App() {
                     <option value="b2c_student">B2C Student</option>
                     <option value="b2b_student">B2B Student</option>
                     <option value="college_admin">College Admin</option>
+                    <option value="super_admin">Super Admin</option>
                   </select>
                 </div>
 
-                {(googleRoleForSignup === 'college_admin' || googleRoleForSignup === 'b2b_student') && (
+                {(googleRoleForSignup === 'college_admin' || googleRoleForSignup === 'super_admin') && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                      {googleRoleForSignup === 'super_admin' ? 'Admin Secret' : 'College ID'}
+                    </label>
+                    <input
+                      type={googleRoleForSignup === 'super_admin' ? 'password' : 'text'}
+                      value={googleRoleForSignup === 'super_admin' ? googleAdminSecretForSignup : googleCollegeIdForSignup}
+                      onChange={(e) => {
+                        if (googleRoleForSignup === 'super_admin') {
+                          setGoogleAdminSecretForSignup(e.target.value);
+                          googleAdminSecretRef.current = e.target.value;
+                        } else {
+                          setGoogleCollegeIdForSignup(e.target.value);
+                          googleCollegeIdRef.current = e.target.value;
+                        }
+                      }}
+                      placeholder={googleRoleForSignup === 'super_admin' ? 'Enter admin secret' : 'Enter college ID'}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-secondary)',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                )}
+
+                {googleRoleForSignup === 'b2b_student' && (
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
                       College ID
@@ -649,7 +685,6 @@ function App() {
                         borderRadius: '8px',
                         border: '1px solid var(--border-color)',
                         background: 'var(--bg-secondary)',
-
                         fontSize: '14px'
                       }}
                     />
@@ -675,10 +710,15 @@ function App() {
                         borderRadius: '8px',
                         border: '1px solid var(--border-color)',
                         background: 'var(--bg-secondary)',
-
                         fontSize: '14px'
                       }}
                     />
+                  </div>
+                )}
+
+                {authError && (
+                  <div className="auth-alert" style={{ marginBottom: '10px' }}>
+                    {authError}
                   </div>
                 )}
 
@@ -703,7 +743,7 @@ function App() {
                   <button
                     type="button"
                     onClick={handleGoogleRoleConfirm}
-                    disabled={submittingAuth || (googleRoleForSignup !== 'b2c_student' && !googleCollegeIdForSignup)}
+                    disabled={submittingAuth || ((googleRoleForSignup === 'college_admin' || googleRoleForSignup === 'b2b_student') && !googleCollegeIdForSignup) || (googleRoleForSignup === 'super_admin' && !googleAdminSecretForSignup)}
                     style={{
                       flex: 1,
                       padding: '10px',

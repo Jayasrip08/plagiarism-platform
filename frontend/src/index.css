@@ -150,24 +150,62 @@ a:hover {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 14px 18px;
   color: var(--text-muted);
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 16px;
+  font-weight: 600;
   transition: all 0.2s ease;
   cursor: pointer;
-  border: none;
-  background: none;
+  border: 1px solid transparent;
+  background: transparent;
   text-align: left;
   font-family: var(--sans);
   font-size: 15px;
+}
+
+.nav-icon {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(109, 40, 217, 0.08);
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nav-link:hover {
+  transform: translateX(2px);
+  background-color: rgba(109, 40, 217, 0.06);
+  color: var(--text-main);
+}
+
+.nav-link.active {
+  background-color: rgba(109, 40, 217, 0.12);
+  color: var(--primary);
+  border-color: rgba(109, 40, 217, 0.28);
+  box-shadow: 0 10px 30px rgba(109, 40, 217, 0.08);
+}
+
+.nav-link.active .nav-icon {
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.2), rgba(8, 145, 178, 0.2));
 }
 
 .nav-link:hover {
@@ -315,6 +353,13 @@ a:hover {
   transform: translateY(-1px);
 }
 
+.btn-secondary:active {
+  background-color: #7c3aed;
+  border-color: #7c3aed;
+  color: #ffffff;
+  transform: translateY(0);
+}
+
 .btn-accent {
   background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
   color: #fff;
@@ -341,6 +386,37 @@ a:hover {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
+}
+
+.table-row-clickable:hover {
+  background-color: rgba(109, 40, 217, 0.05);
+}
+
+.table-row-clickable.selected {
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.history-order-detail {
+  margin-top: 24px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  padding: 24px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.detail-item {
+  min-width: 160px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
 }
 
 .auth-screen {
@@ -957,6 +1033,152 @@ select.form-control:focus {
 .step.active .step-label, .step.completed .step-label {
   color: var(--text-main);
   font-weight: 600;
+}
+
+/* Pricing Configuration Responsive Layout */
+.pricing-config-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pricing-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.pricing-header-badge {
+  min-width: 240px;
+  padding: 18px 22px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(59, 130, 246, 0.12));
+  border: 1px solid rgba(56, 189, 248, 0.15);
+}
+
+.pricing-badge-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.pricing-badge-value {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.pricing-config-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr;
+  gap: 26px;
+  align-items: start;
+}
+
+.pricing-config-form,
+.pricing-summary-card {
+  padding: 30px;
+}
+
+.pricing-field-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 14px;
+  background-color: rgba(255,255,255,0.92);
+  border: 1px solid rgba(148,163,184,0.16);
+}
+
+.field-help {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.pricing-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(148,163,184,0.16);
+  font-size: 15px;
+}
+
+.pricing-summary-item:last-of-type {
+  border-bottom: none;
+}
+
+.pricing-summary-callout {
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 16px;
+  background-color: rgba(15,23,42,0.04);
+}
+
+.callout-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.callout-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.callout-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148,163,184,0.16);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+@media (max-width: 1100px) {
+  .pricing-config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .pricing-header {
+    flex-direction: column;
+  }
+
+  .pricing-header-badge {
+    width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .pricing-config-form,
+  .pricing-summary-card {
+    padding: 24px;
+  }
+
+  .pricing-summary-item,
+  .callout-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .callout-total {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
 
 /* File Upload Dropzone */

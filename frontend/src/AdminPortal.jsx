@@ -26,10 +26,14 @@ export default function AdminPortal({ user }) {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [searchUser, setSearchUser] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
+  const [selectedHistoryOrder, setSelectedHistoryOrder] = useState(null);
 
   // Pricing configs
   const [pricing, setPricing] = useState({ per_word_rate: '', express_fee: '', editing_suggestions_fee: '', referral_credit: '' });
   const [updatingPricing, setUpdatingPricing] = useState(false);
+  const [historyOrders, setHistoryOrders] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -38,6 +42,12 @@ export default function AdminPortal({ user }) {
     fetchUsers();
     fetchPricing();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchHistory();
+    }
+  }, [activeTab]);
 
   const fetchStats = async () => {
     setLoadingStats(true);
@@ -96,6 +106,26 @@ export default function AdminPortal({ user }) {
     } catch (e) {
       console.error("Failed to fetch pricing config", e);
     }
+  };
+
+  const fetchHistory = async (query = historySearch.trim()) => {
+    setLoadingHistory(true);
+    try {
+      const params = {};
+      if (query) params.search = query;
+      const res = await api.get('orders/', { params });
+      setHistoryOrders(res.data);
+      setSelectedHistoryOrder(null);
+    } catch (e) {
+      console.error("Failed to load order history", e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleHistorySearchSubmit = (e) => {
+    e.preventDefault();
+    fetchHistory(historySearch.trim());
   };
 
   const handleStartProcessing = async (orderId) => {
@@ -233,19 +263,29 @@ export default function AdminPortal({ user }) {
         </div>
         <div className="sidebar-nav">
           <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            BI Dashboard
+            <span className="nav-icon">📊</span>
+            <span>BI Dashboard</span>
           </button>
           <button className={`nav-link ${activeTab === 'queue' ? 'active' : ''}`} onClick={() => { setActiveTab('queue'); fetchQueue(); }}>
-            Pending Queue ({queue.length})
+            <span className="nav-icon">🕒</span>
+            <span>Pending Queue</span>
+            <span className="nav-badge">{queue.length}</span>
+          </button>
+          <button className={`nav-link ${activeTab === 'history' ? 'active' : ''}`} onClick={() => { setActiveTab('history'); fetchHistory(); }}>
+            <span className="nav-icon">📁</span>
+            <span>Order History</span>
           </button>
           <button className={`nav-link ${activeTab === 'colleges' ? 'active' : ''}`} onClick={() => setActiveTab('colleges')}>
-            Colleges Manager
+            <span className="nav-icon">🏫</span>
+            <span>Colleges Manager</span>
           </button>
           <button className={`nav-link ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            User Lockout tool
+            <span className="nav-icon">🔒</span>
+            <span>User Lockout tool</span>
           </button>
           <button className={`nav-link ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}>
-            Pricing Configuration
+            <span className="nav-icon">💰</span>
+            <span>Pricing Configuration</span>
           </button>
         </div>
         <div style={{ marginTop: 'auto', padding: '16px 0' }}>
@@ -475,7 +515,134 @@ export default function AdminPortal({ user }) {
           </div>
         )}
 
-        {/* TAB 3: COLLEGES MANAGER */}
+        {/* TAB 3: ORDER HISTORY */}
+        {activeTab === 'history' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ minWidth: '280px', flex: '1 1 360px' }}>
+                <h2 style={{ fontSize: '26px' }}>Order History</h2>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', width: '100%', maxWidth: '520px' }}>
+                <form onSubmit={handleHistorySearchSubmit} style={{ display: 'flex', flex: '1 1 260px', gap: '10px' }}>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search document name or user ID"
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                  />
+                  <button type="submit" className="btn btn-primary" style={{ minWidth: '120px' }}>
+                    Search
+                  </button>
+                </form>
+                <button className="btn btn-secondary" onClick={() => { setHistorySearch(''); fetchHistory(); }}>
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {loadingHistory ? (
+              <div className="spinner"></div>
+            ) : (
+              <div style={{ marginBottom: '20px', color: 'var(--text-muted)', fontSize: '14px' }}>
+                Showing <strong>{historyOrders.length}</strong> orders{historySearch ? ` · Search: "${historySearch}"` : ''}
+              </div>
+            )}
+            {loadingHistory ? null : historyOrders.length === 0 ? (
+              <div className="glass-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                No order history is available yet.
+              </div>
+            ) : (
+              <div className="table-container">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>User</th>
+                      <th>Document</th>
+                      <th>Type</th>
+                      <th>Words</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyOrders.map(order => (
+                      <tr
+                        key={order.id}
+                        className={`table-row-clickable ${selectedHistoryOrder?.id === order.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedHistoryOrder(order)}
+                      >
+                        <td>#{order.id}</td>
+                        <td>
+                          <strong>{order.user_details?.username || order.user}</strong>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {order.user_details?.email || 'No email'}
+                          </div>
+                        </td>
+                        <td>{order.document?.split('/').pop() || 'N/A'}</td>
+                        <td>{order.is_b2b ? 'B2B Credit' : 'B2C Cash'}</td>
+                        <td>{order.word_count}</td>
+                        <td>₹{parseFloat(order.price || 0).toFixed(2)}</td>
+                        <td>
+                          <span className={`badge badge-${order.status.toLowerCase().replace(' ', '-')}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td>{new Date(order.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {selectedHistoryOrder && (
+              <div className="glass-card history-order-detail">
+                <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ marginBottom: '10px' }}>Selected Order #{selectedHistoryOrder.id}</h3>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: '14px' }}>
+                      Click another row anytime to preview a different order.
+                    </div>
+                  </div>
+                  <button className="btn btn-secondary" style={{ height: 'fit-content' }} onClick={() => setSelectedHistoryOrder(null)}>
+                    Clear Selection
+                  </button>
+                </div>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <div className="detail-label">User</div>
+                    <div><strong>{selectedHistoryOrder.user_details?.username || selectedHistoryOrder.user}</strong></div>
+                    <div style={{ color: 'var(--text-muted)' }}>{selectedHistoryOrder.user_details?.email || 'No email'}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Document</div>
+                    <div>{selectedHistoryOrder.document?.split('/').pop() || 'N/A'}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Mode</div>
+                    <div>{selectedHistoryOrder.is_b2b ? 'B2B Credit' : 'B2C Cash'}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Status</div>
+                    <div>{selectedHistoryOrder.status}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Words</div>
+                    <div>{selectedHistoryOrder.word_count}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Price</div>
+                    <div>₹{parseFloat(selectedHistoryOrder.price || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: COLLEGES MANAGER */}
         {activeTab === 'colleges' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
             {/* Left: Create & Allocate */}
@@ -656,35 +823,102 @@ export default function AdminPortal({ user }) {
 
         {/* TAB 5: PRICING CONFIGURATION */}
         {activeTab === 'pricing' && (
-          <div style={{ maxWidth: '500px' }}>
-            <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>Pricing Configuration</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Edit base charges, express rates, and suggestions addons instantly.</p>
+          <div className="pricing-config-layout">
+            <div className="pricing-header">
+              <div>
+                <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>Pricing Configuration</h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '4px', maxWidth: '640px' }}>
+                  Manage pricing settings for document verification, express delivery, editing suggestions, and referral credits in a polished responsive dashboard.
+                </p>
+              </div>
+              <div className="pricing-header-badge">
+                <div className="pricing-badge-title">Live Pricing Preview</div>
+                <div className="pricing-badge-value">Changes are saved instantly to the platform.</div>
+              </div>
+            </div>
 
-            <form onSubmit={handlePricingSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="form-group" style={{ marginBottom: '0' }}>
-                <label className="form-label">Per-Word Verification Rate (₹)</label>
-                <input type="number" step="0.01" className="form-control" required value={pricing.per_word_rate} onChange={(e) => setPricing({ ...pricing, per_word_rate: e.target.value })} />
+            <div className="pricing-config-grid">
+              <div className="glass-card pricing-config-form">
+                <h3 style={{ fontSize: '20px', marginBottom: '18px' }}>Edit Configuration</h3>
+                <form onSubmit={handlePricingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div className="pricing-field-card">
+                    <div>
+                      <label className="form-label">Per-Word Verification Rate (₹)</label>
+                      <p className="field-help">Set the base amount charged per verified word.</p>
+                    </div>
+                    <input type="number" step="0.01" className="form-control" required value={pricing.per_word_rate} onChange={(e) => setPricing({ ...pricing, per_word_rate: e.target.value })} />
+                  </div>
+
+                  <div className="pricing-field-card">
+                    <div>
+                      <label className="form-label">Express Verification Surcharge (₹)</label>
+                      <p className="field-help">This fee is added for priority queue processing.</p>
+                    </div>
+                    <input type="number" step="1" className="form-control" required value={pricing.express_fee} onChange={(e) => setPricing({ ...pricing, express_fee: e.target.value })} />
+                  </div>
+
+                  <div className="pricing-field-card">
+                    <div>
+                      <label className="form-label">Editing Suggestions Addon Fee (₹)</label>
+                      <p className="field-help">Optional add-on fee for grammar and phrasing guidance.</p>
+                    </div>
+                    <input type="number" step="1" className="form-control" required value={pricing.editing_suggestions_fee} onChange={(e) => setPricing({ ...pricing, editing_suggestions_fee: e.target.value })} />
+                  </div>
+
+                  <div className="pricing-field-card">
+                    <div>
+                      <label className="form-label">Referral Bonus Credit (₹)</label>
+                      <p className="field-help">Amount awarded to users for every successful referral.</p>
+                    </div>
+                    <input type="number" step="1" className="form-control" required value={pricing.referral_credit} onChange={(e) => setPricing({ ...pricing, referral_credit: e.target.value })} />
+                  </div>
+
+                  <button type="submit" className="btn btn-primary" disabled={updatingPricing}>
+                    {updatingPricing ? "Saving pricing..." : "Save Pricing Configuration"}
+                  </button>
+                </form>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '0' }}>
-                <label className="form-label">Express Verification Surcharge (₹)</label>
-                <input type="number" step="1" className="form-control" required value={pricing.express_fee} onChange={(e) => setPricing({ ...pricing, express_fee: e.target.value })} />
-              </div>
+              <div className="glass-card pricing-summary-card">
+                <h3 style={{ fontSize: '20px', marginBottom: '16px' }}>Configuration Summary</h3>
+                <div className="pricing-summary-item">
+                  <span>Per Word Rate</span>
+                  <strong>₹{pricing.per_word_rate || '0.00'}</strong>
+                </div>
+                <div className="pricing-summary-item">
+                  <span>Express Surcharge</span>
+                  <strong>₹{pricing.express_fee || '0.00'}</strong>
+                </div>
+                <div className="pricing-summary-item">
+                  <span>Editing Suggestions Fee</span>
+                  <strong>₹{pricing.editing_suggestions_fee || '0.00'}</strong>
+                </div>
+                <div className="pricing-summary-item">
+                  <span>Referral Credit</span>
+                  <strong>₹{pricing.referral_credit || '0.00'}</strong>
+                </div>
 
-              <div className="form-group" style={{ marginBottom: '0' }}>
-                <label className="form-label">Editing Suggestions Addon Fee (₹)</label>
-                <input type="number" step="1" className="form-control" required value={pricing.editing_suggestions_fee} onChange={(e) => setPricing({ ...pricing, editing_suggestions_fee: e.target.value })} />
+                <div className="pricing-summary-callout">
+                  <div className="callout-title">Sample Verified Order</div>
+                  <div className="callout-line">
+                    <span>Document size</span>
+                    <span><strong>1,200 words</strong></span>
+                  </div>
+                  <div className="callout-line">
+                    <span>Base charge</span>
+                    <span><strong>₹{((parseFloat(pricing.per_word_rate) || 0) * 1200).toFixed(2)}</strong></span>
+                  </div>
+                  <div className="callout-line">
+                    <span>Express + suggestions</span>
+                    <span><strong>₹{(((parseFloat(pricing.express_fee) || 0) + (parseFloat(pricing.editing_suggestions_fee) || 0))).toFixed(2)}</strong></span>
+                  </div>
+                  <div className="callout-total">
+                    Total estimate
+                    <strong>₹{(((parseFloat(pricing.per_word_rate) || 0) * 1200) + (parseFloat(pricing.express_fee) || 0) + (parseFloat(pricing.editing_suggestions_fee) || 0)).toFixed(2)}</strong>
+                  </div>
+                </div>
               </div>
-
-              <div className="form-group" style={{ marginBottom: '12px' }}>
-                <label className="form-label">Referral Bonus Allocation (₹)</label>
-                <input type="number" step="1" className="form-control" required value={pricing.referral_credit} onChange={(e) => setPricing({ ...pricing, referral_credit: e.target.value })} />
-              </div>
-
-              <button type="submit" className="btn btn-primary" disabled={updatingPricing}>
-                {updatingPricing ? "Saving..." : "Save Pricing Config"}
-              </button>
-            </form>
+            </div>
           </div>
         )}
 

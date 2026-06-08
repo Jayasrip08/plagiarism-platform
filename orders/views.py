@@ -96,7 +96,17 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'super_admin':
-            return Order.objects.all().order_by('-created_at')
+            queryset = Order.objects.all()
+            search_query = self.request.query_params.get('search', '').strip()
+            status_query = self.request.query_params.get('status', '').strip()
+            if search_query:
+                search_filters = Q(document__icontains=search_query) | Q(user__username__icontains=search_query) | Q(user__email__icontains=search_query)
+                if search_query.isdigit():
+                    search_filters |= Q(user__id=int(search_query))
+                queryset = queryset.filter(search_filters)
+            if status_query:
+                queryset = queryset.filter(status__iexact=status_query)
+            return queryset.order_by('-created_at')
         elif user.role == 'college_admin':
             # Submissions for all students in this college
             if not user.college:
