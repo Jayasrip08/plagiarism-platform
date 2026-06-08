@@ -618,7 +618,9 @@ export default function AdminPortal({ user }) {
                   </div>
                   <div className="detail-item">
                     <div className="detail-label">Document</div>
-                    <div>{selectedHistoryOrder.document?.split('/').pop() || 'N/A'}</div>
+                    <div title={selectedHistoryOrder.document?.split('/').pop() || 'N/A'} style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {selectedHistoryOrder.document?.split('/').pop() || 'N/A'}
+                    </div>
                   </div>
                   <div className="detail-item">
                     <div className="detail-label">Mode</div>

@@ -411,12 +411,26 @@ a:hover {
 
 .detail-item {
   min-width: 160px;
+  overflow: hidden;
+}
+
+.detail-item > div {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.detail-item > div:not(.detail-label) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail-label {
   font-size: 12px;
   color: var(--text-muted);
   margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .auth-screen {
