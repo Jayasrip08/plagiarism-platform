@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { logout } from './api';
+import ProfilePage from './ProfilePage';
 
-export default function StudentPortal({ user }) {
+export default function StudentPortal({ user, setUser }) {
   const [activeTab, setActiveTab] = useState('new_check');
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -21,9 +22,16 @@ export default function StudentPortal({ user }) {
   
   // Tracking State
   const [trackedOrder, setTrackedOrder] = useState(null);
+
+  // Pricing State
+  const [pricingConfig, setPricingConfig] = useState({
+    express_fee: 500,
+    editing_suggestions_fee: 299
+  });
+  
   const fileInputRef = useRef(null);
 
-  // Load Razorpay checkout script
+  // Load Razorpay checkout script & Pricing config
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -31,6 +39,7 @@ export default function StudentPortal({ user }) {
     document.body.appendChild(script);
     
     fetchOrders();
+    fetchPricingConfig();
   }, []);
 
   const fetchOrders = async () => {
@@ -42,6 +51,19 @@ export default function StudentPortal({ user }) {
       console.error("Failed to load orders history:", e);
     } finally {
       setLoadingOrders(false);
+    }
+  };
+
+  const fetchPricingConfig = async () => {
+    try {
+      const res = await api.get('orders/pricing/');
+      setPricingConfig({
+        express_fee: res.data.express_fee || 500,
+        editing_suggestions_fee: res.data.editing_suggestions_fee || 299
+      });
+    } catch (e) {
+      console.error("Failed to fetch pricing config, using defaults", e);
+      // Keep defaults if fetch fails
     }
   };
 
@@ -221,8 +243,57 @@ export default function StudentPortal({ user }) {
     setActiveTab('tracking');
   };
 
-  const downloadInvoice = (orderId) => {
-    window.open(`http://localhost:8000/api/orders/${orderId}/invoice/`, '_blank');
+  const downloadInvoice = async (orderId) => {
+    try {
+      const res = await api.get(`orders/${orderId}/invoice/`, {
+        responseType: 'blob'
+      });
+      
+      // Check if the response is actually a PDF
+      if (res.headers['content-type'] && res.headers['content-type'].includes('application/pdf')) {
+        // Create blob URL and trigger download
+        const url = window.URL.createObjectURL(new Blob([res.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `invoice_${orderId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        // Response is not a PDF, try to extract error message
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const errorData = JSON.parse(reader.result);
+            alert(`Error: ${errorData.error || 'Failed to generate invoice'}`);
+          } catch {
+            alert("Failed to generate invoice. Please try again.");
+          }
+        };
+        reader.readAsText(res.data);
+      }
+    } catch (e) {
+      console.error("Failed to download invoice:", e);
+      
+      // Try to extract error message from blob error response
+      if (e.response?.data instanceof Blob) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const errorData = JSON.parse(reader.result);
+            alert(`Error: ${errorData.error || 'Failed to download invoice'}`);
+          } catch {
+            alert("Error downloading invoice. Please try again.");
+          }
+        };
+        reader.readAsText(e.response.data);
+      } else if (e.response?.data?.error) {
+        alert(`Error: ${e.response.data.error}`);
+      } else {
+        alert("Error downloading invoice. Please try again.");
+      }
+    }
   };
 
   return (
@@ -247,6 +318,12 @@ export default function StudentPortal({ user }) {
             onClick={() => setActiveTab('history')}
           >
             Order History
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            Profile
           </button>
           {trackedOrder && (
             <button 
@@ -391,7 +468,7 @@ export default function StudentPortal({ user }) {
                       style={{ scale: '1.2' }}
                     />
                     <div>
-                      <strong>Express Verification (+₹500)</strong>
+                      <strong>Express Verification (+₹{pricingConfig.express_fee})</strong>
                       <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Prioritizes report generation. Average turnaround under 2 hours.</p>
                     </div>
                   </label>
@@ -404,7 +481,7 @@ export default function StudentPortal({ user }) {
                       style={{ scale: '1.2' }}
                     />
                     <div>
-                      <strong>Include Editing Suggestions (+₹299)</strong>
+                      <strong>Include Editing Suggestions (+₹{pricingConfig.editing_suggestions_fee})</strong>
                       <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Auto-generates phrasing guidelines, grammar, and referencing checklists.</p>
                     </div>
                   </label>
@@ -534,7 +611,12 @@ export default function StudentPortal({ user }) {
           </div>
         )}
 
-        {/* TAB 3: LIVE TRACKING */}
+        {/* TAB 3: PROFILE */}
+        {activeTab === 'profile' && (
+          <ProfilePage user={user} onProfileUpdate={setUser} />
+        )}
+
+        {/* TAB 4: LIVE TRACKING */}
         {activeTab === 'tracking' && trackedOrder && (
           <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -587,8 +669,10 @@ export default function StudentPortal({ user }) {
                   <div className="step-label">Processing</div>
                 </div>
 
-                <div className={`step ${trackedOrder.status === 'Report Ready' ? 'active' : ''}`}>
-                  <div className="step-circle">3</div>
+                <div className={`step ${trackedOrder.status === 'Report Ready' ? 'completed' : ''}`}>
+                  <div className="step-circle">
+                    {trackedOrder.status === 'Report Ready' ? '✓' : '3'}
+                  </div>
                   <div className="step-label">Report Ready</div>
                 </div>
               </div>
@@ -660,14 +744,14 @@ export default function StudentPortal({ user }) {
               One-Time Special Offer!
             </h3>
             <p style={{ color: 'var(--text-main)', fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>
-              Add Detailed Editing Suggestions for only ₹299?
+              Add Detailed Editing Suggestions for only ₹{pricingConfig.editing_suggestions_fee}?
             </p>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
               Take your research paper to the next level. Over 25% of researchers add this option. Receive automatic highlights on grammar, poor structural flow, and vocabulary enhancements directly attached in your plagiarism audit report.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button className="btn btn-primary" onClick={() => handleUpsellDecision(true)}>
-                Yes, add for ₹299
+                Yes, add for ₹{pricingConfig.editing_suggestions_fee}
               </button>
               <button className="btn btn-secondary" onClick={() => handleUpsellDecision(false)}>
                 No thanks, proceed

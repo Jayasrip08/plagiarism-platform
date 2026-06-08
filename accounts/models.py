@@ -3,7 +3,8 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     ROLE_CHOICES = (
-        ('user', 'User'),
+        ('b2c_student', 'B2C Student'),
+        ('b2b_student', 'B2B Student'),
         ('college_admin', 'College Admin'),
         ('super_admin', 'Super Admin'),
     )
@@ -11,7 +12,7 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
-        default='user'
+        default='b2c_student'
     )
 
     phone = models.CharField(
