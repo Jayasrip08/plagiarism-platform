@@ -8,6 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-plagiarism-platform-super-secret-key-123456789'
 
+# Super admin registration secret
+SUPER_ADMIN_SECRET = os.environ.get('SUPER_ADMIN_SECRET', 'super_admin_secret_key_123')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -91,9 +94,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.AttributeSimilarityValidator',
     },
 ]
 

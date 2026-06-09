@@ -56,8 +56,8 @@ export const loginUser = async (username, password) => {
   return user;
 };
 
-export const googleLoginUser = async (email, name) => {
-  const response = await api.post('accounts/google-login/', { email, name });
+export const googleLoginUser = async (googleData) => {
+  const response = await api.post('accounts/google-login/', googleData);
   const { access, refresh, user } = response.data;
   localStorage.setItem('access_token', access);
   localStorage.setItem('refresh_token', refresh);
@@ -65,8 +65,13 @@ export const googleLoginUser = async (email, name) => {
   return user;
 };
 
-export const registerUser = async (username, email, password, phone) => {
-  return api.post('accounts/register/', { username, email, password, phone });
+export const registerUser = async (registrationData) => {
+  return api.post('accounts/register/', registrationData);
+};
+
+export const updateProfile = async (profileData) => {
+  const response = await api.put('accounts/profile/', profileData);
+  return response.data;
 };
 
 export const logout = () => {

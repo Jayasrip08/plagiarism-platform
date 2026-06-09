@@ -96,7 +96,17 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'super_admin':
-            return Order.objects.all().order_by('-created_at')
+            queryset = Order.objects.all()
+            search_query = self.request.query_params.get('search', '').strip()
+            status_query = self.request.query_params.get('status', '').strip()
+            if search_query:
+                search_filters = Q(document__icontains=search_query) | Q(user__username__icontains=search_query) | Q(user__email__icontains=search_query)
+                if search_query.isdigit():
+                    search_filters |= Q(user__id=int(search_query))
+                queryset = queryset.filter(search_filters)
+            if status_query:
+                queryset = queryset.filter(status__iexact=status_query)
+            return queryset.order_by('-created_at')
         elif user.role == 'college_admin':
             # Submissions for all students in this college
             if not user.college:
@@ -309,93 +319,163 @@ class OrderInvoiceView(APIView):
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib import colors
+        from io import BytesIO
 
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="Invoice_{order.id}.pdf"'
+        try:
+            # Use BytesIO instead of HttpResponse for safer PDF generation
+            pdf_buffer = BytesIO()
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+            story = []
 
-        doc = SimpleDocTemplate(response, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-        story = []
+            styles = getSampleStyleSheet()
+            
+            # Styles
+            title_style = ParagraphStyle(
+                'TitleStyle',
+                parent=styles['Heading1'],
+                fontSize=24,
+                textColor=colors.HexColor("#1A202C"),
+                spaceAfter=15
+            )
+            body_style = ParagraphStyle(
+                'BodyStyle',
+                parent=styles['Normal'],
+                fontSize=10,
+                textColor=colors.HexColor("#4A5568"),
+                spaceAfter=8
+            )
+            h2_style = ParagraphStyle(
+                'H2Style',
+                parent=styles['Heading2'],
+                fontSize=14,
+                textColor=colors.HexColor("#2D3748"),
+                spaceAfter=10
+            )
 
-        styles = getSampleStyleSheet()
-        
-        # Styles
-        title_style = ParagraphStyle(
-            'TitleStyle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            textColor=colors.HexColor("#1A202C"),
-            spaceAfter=15
-        )
-        body_style = ParagraphStyle(
-            'BodyStyle',
-            parent=styles['Normal'],
-            fontSize=10,
-            textColor=colors.HexColor("#4A5568"),
-            spaceAfter=8
-        )
-        h2_style = ParagraphStyle(
-            'H2Style',
-            parent=styles['Heading2'],
-            fontSize=14,
-            textColor=colors.HexColor("#2D3748"),
-            spaceAfter=10
-        )
+            # Invoice header and metadata
+            story.append(Paragraph("TAX INVOICE", title_style))
 
-        story.append(Paragraph("TAX INVOICE", title_style))
-        story.append(Paragraph(f"Invoice Date: {order.created_at.strftime('%d %B %Y')}", body_style))
-        story.append(Paragraph(f"Invoice Number: INV-{order.id:06d}", body_style))
-        story.append(Paragraph(f"Order Mode: {'B2B Credit' if order.is_b2b else 'B2C Checkout'}", body_style))
-        story.append(Spacer(1, 20))
-
-        billing_data = [
-            [Paragraph("<b>Billed To:</b>", body_style), Paragraph("<b>Service Provider:</b>", body_style)],
-            [
-                Paragraph(f"Name: {order.user.get_full_name() or order.user.username}<br/>Email: {order.user.email}<br/>Phone: {order.user.phone or 'N/A'}", body_style),
-                Paragraph("Plagiarism Checker Platform Inc.<br/>Support: support@plagiarismplatform.com<br/>Web: plagiarismplatform.com", body_style)
+            invoice_meta = [
+                [Paragraph("<b>Invoice Number:</b>", body_style), Paragraph(f"INV-{order.id:06d}", body_style)],
+                [Paragraph("<b>Invoice Date:</b>", body_style), Paragraph(order.created_at.strftime('%d %B %Y'), body_style)],
+                [Paragraph("<b>Order Mode:</b>", body_style), Paragraph('B2B Credit' if order.is_b2b else 'B2C Checkout', body_style)],
+                [Paragraph("<b>Order Status:</b>", body_style), Paragraph(order.status, body_style)],
             ]
-        ]
-        billing_table = Table(billing_data, colWidths=[275, 275])
-        billing_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
-        ]))
-        story.append(billing_table)
-        story.append(Spacer(1, 20))
+            invoice_meta_table = Table(invoice_meta, colWidths=[120, 160], hAlign='RIGHT')
+            invoice_meta_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#4A5568")),
+            ]))
 
-        story.append(Paragraph("Order Summary", h2_style))
-        
-        table_data = [
-            ["Item Description", "Details", "Amount"],
-            [f"Plagiarism Check - {os.path.basename(order.document.name)}", f"{order.word_count} words", f"INR {order.price:.2f}"]
-        ]
-        
-        if order.is_express:
-            table_data.append(["Express Check Premium", "Priority Queue", "Included"])
-        if order.has_editing_suggestions:
-            table_data.append(["Editing Suggestions Addon", "₹299 addon", "Included"])
+            header_table = Table(
+                [[Paragraph("", body_style), invoice_meta_table]],
+                colWidths=[320, 230]
+            )
+            header_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ]))
+            story.append(header_table)
+            story.append(Spacer(1, 20))
 
-        table_data.append(["Total Paid", "", f"INR {order.price:.2f}"])
+            # Get user details safely
+            user_full_name = order.user.get_full_name() or order.user.username
+            user_phone = getattr(order.user, 'phone', 'N/A') or 'N/A'
+            billing_data = [
+                [Paragraph("<b>Billed To:</b>", body_style), Paragraph("<b>Service Provider:</b>", body_style)],
+                [
+                    Paragraph(
+                        f"Name: {user_full_name}<br/>Email: {order.user.email}<br/>Phone: {user_phone}",
+                        body_style
+                    ),
+                    Paragraph(
+                        "Plagiarism Checker Platform Inc.<br/>Support: support@plagiarismplatform.com<br/>Web: plagiarismplatform.com",
+                        body_style
+                    )
+                ]
+            ]
+            billing_table = Table(billing_data, colWidths=[275, 275])
+            billing_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+                ('LINEBEFORE', (1,0), (1,-1), 0.5, colors.HexColor('#CBD5E0')),
+            ]))
+            story.append(billing_table)
+            story.append(Spacer(1, 25))
 
-        summary_table = Table(table_data, colWidths=[300, 120, 130])
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F7FAFC")),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#2D3748")),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0,0), (-1,0), 8),
-            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
-            ('GRID', (0,0), (-1,-2), 0.5, colors.HexColor("#E2E8F0")),
-            ('LINEBELOW', (0,-1), (-1,-1), 1.5, colors.HexColor("#2D3748")),
-            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
-            ('ALIGN', (2,0), (2,-1), 'RIGHT'),
-        ]))
-        story.append(summary_table)
-        story.append(Spacer(1, 30))
+            story.append(Paragraph("Order Summary", h2_style))
 
-        story.append(Paragraph("Thank you for choosing our platform!", body_style))
-        story.append(Paragraph("This invoice is automatically generated upon successful payment/allocation.", body_style))
+            # Get document name safely
+            doc_name = os.path.basename(order.document.name) if order.document else "Document"
+            
+            table_data = [
+                [Paragraph("<b>Item</b>", body_style), Paragraph("<b>Description</b>", body_style), Paragraph("<b>Qty</b>", body_style), Paragraph("<b>Amount</b>", body_style)],
+                [
+                    Paragraph("Plagiarism Check", body_style),
+                    Paragraph(doc_name, body_style),
+                    Paragraph(f"{order.word_count} words", body_style),
+                    Paragraph(f"₹ {order.price:.2f}", body_style)
+                ]
+            ]
+            if order.is_express:
+                table_data.append([
+                    Paragraph("Express Check Premium", body_style),
+                    Paragraph("Priority queue service", body_style),
+                    Paragraph("1", body_style),
+                    Paragraph("Included", body_style)
+                ])
+            if order.has_editing_suggestions:
+                table_data.append([
+                    Paragraph("Editing Suggestions Addon", body_style),
+                    Paragraph("Grammar and phrasing guidance", body_style),
+                    Paragraph("1", body_style),
+                    Paragraph("Included", body_style)
+                ])
 
-        doc.build(story)
-        return response
+            table_data.append([
+                '',
+                '',
+                Paragraph("<b>Total Paid</b>", body_style),
+                Paragraph(f"<b>₹ {order.price:.2f}</b>", body_style)
+            ])
+
+            summary_table = Table(table_data, colWidths=[170, 235, 80, 110])
+            summary_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F7FAFC")),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#2D3748")),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('ALIGN', (2,1), (3,-1), 'RIGHT'),
+                ('LINEABOVE', (0,-1), (-1,-1), 1, colors.HexColor("#2D3748")),
+                ('BOTTOMPADDING', (0,0), (-1,0), 10),
+                ('BOTTOMPADDING', (0,1), (-1,-2), 6),
+                ('BOTTOMPADDING', (2,-1), (3,-1), 10),
+                ('GRID', (0,0), (-1,-2), 0.5, colors.HexColor("#E2E8F0")),
+            ]))
+            story.append(summary_table)
+            story.append(Spacer(1, 30))
+
+            story.append(Paragraph("Thank you for choosing our platform!", body_style))
+            story.append(Paragraph("If you have any questions, please reach out to support@plagiarismplatform.com.", body_style))
+
+            doc.build(story)
+            
+            # Get PDF bytes
+            pdf_buffer.seek(0)
+            pdf_bytes = pdf_buffer.getvalue()
+            pdf_buffer.close()
+
+            # Return PDF response
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="Invoice_{order.id}.pdf"'
+            return response
+            
+        except Exception as e:
+            print(f"Error generating invoice for order {pk}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Failed to generate invoice: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SuperAdminOrderQueueView(generics.ListAPIView):
