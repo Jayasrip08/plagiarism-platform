@@ -18,15 +18,9 @@ cd frontend
 npm run dev
 
 
-1. Super Admin Portal (BI & Operations)
-Username: admin
-Password: admin123
-2. College Admin Portal (NAAC Audit logs & Credits)
-Username: college_admin
-Password: admin123
-3. B2B Student / Researcher (Submits using college credits)
-Username: b2b_student
-Password: student123
-4. B2C Student / Researcher (Public payments via Razorpay)
-Username: student_b2c
-Password: student123
+frontend/.env need to be change 
+
+If you want to wipe the entire database completely (including the super admin and all configurations), you can run:
+
+bash
+python manage.py flush
