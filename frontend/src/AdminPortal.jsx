@@ -255,7 +255,7 @@ export default function AdminPortal({ user }) {
     <div className="dashboard-layout">
       {/* Sidebar Navigation */}
       <aside className="sidebar">
-        <div className="logo" style={{ background: 'linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <div className="logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
@@ -456,7 +456,7 @@ export default function AdminPortal({ user }) {
                       <tr 
                         key={order.id}
                         style={{
-                          backgroundColor: order.is_express ? 'rgba(6, 182, 212, 0.03)' : 'inherit'
+                          backgroundColor: order.is_express ? 'rgba(30, 64, 175, 0.03)' : 'inherit'
                         }}
                       >
                         <td>
@@ -935,7 +935,7 @@ export default function AdminPortal({ user }) {
             <form onSubmit={handleCompleteOrderSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
               <div style={{ backgroundColor: 'var(--bg-tertiary)', padding: '12px', borderRadius: '6px', fontSize: '13px', textAlign: 'left', marginBottom: '8px' }}>
-                File: <strong style={{ color: 'var(--secondary)' }}>{selectedOrder.document.split('/').pop()}</strong><br/>
+                File: <strong style={{ color: 'var(--primary)' }}>{selectedOrder.document.split('/').pop()}</strong><br/>
                 Word Count: <strong>{selectedOrder.word_count} words</strong>
               </div>
 

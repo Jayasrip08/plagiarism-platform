@@ -180,7 +180,7 @@ export default function StudentPortal({ user, setUser }) {
             email: user.email,
             contact: user.phone || '',
           },
-          theme: { color: '#6d28d9' }
+          theme: { color: '#1e40af' }
         };
         const rzp = new window.Razorpay(options);
         rzp.open();
@@ -412,7 +412,7 @@ export default function StudentPortal({ user, setUser }) {
                   </div>
                   
                   {user.college_id && (
-                    <div className="form-group" style={{ margin: '16px 0', padding: '10px', background: 'rgba(6, 182, 212, 0.05)', borderRadius: '6px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+                    <div className="form-group" style={{ margin: '16px 0', padding: '10px', background: 'rgba(30, 64, 175, 0.04)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                         <input 
                           type="checkbox" 
@@ -421,7 +421,7 @@ export default function StudentPortal({ user, setUser }) {
                           style={{ scale: '1.2' }}
                         />
                         <div>
-                          <strong style={{ color: 'var(--secondary)' }}>Use College B2B Credits</strong>
+                          <strong style={{ color: 'var(--primary)' }}>Use College B2B Credits</strong>
                           <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             Deduct 1 check from {user.college_name} credits. Free submission.
                           </p>
@@ -553,7 +553,7 @@ export default function StudentPortal({ user, setUser }) {
                         <td>#{o.id}</td>
                         <td style={{ fontWeight: '600' }}>
                           {o.document.split('/').pop()}
-                          {o.is_express && <span style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 6px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--secondary)', borderRadius: '4px' }}>EXPRESS</span>}
+                          {o.is_express && <span style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 6px', background: 'rgba(30, 64, 175, 0.12)', color: 'var(--primary)', borderRadius: '4px' }}>EXPRESS</span>}
                         </td>
                         <td>{new Date(o.created_at).toLocaleDateString()}</td>
                         <td>{o.word_count}</td>
@@ -740,7 +740,7 @@ export default function StudentPortal({ user, setUser }) {
       {showUpsell && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: 'center' }}>
-            <h3 style={{ fontSize: '24px', marginBottom: '12px', background: 'linear-gradient(135deg, var(--secondary), var(--primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <h3 style={{ fontSize: '24px', marginBottom: '12px', color: 'var(--primary)' }}>
               One-Time Special Offer!
             </h3>
             <p style={{ color: 'var(--text-main)', fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>

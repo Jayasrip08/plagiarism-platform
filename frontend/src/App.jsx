@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getUserProfile, loginUser, registerUser, googleLoginUser } from './api'
+import api, { getUserProfile, loginUser, registerUser, googleLoginUser } from './api'
 import StudentPortal from './StudentPortal'
 import CollegePortal from './CollegePortal'
 import AdminPortal from './AdminPortal'
@@ -19,10 +19,11 @@ function App() {
   const [lastName, setLastName] = useState('');
   const [collegeId, setCollegeId] = useState('');
   const [adminSecret, setAdminSecret] = useState('');
-  const [department, setDepartment] = useState('Computer Science');
-  const [departmentOption, setDepartmentOption] = useState('Computer Science');
+  const [department, setDepartment] = useState('');
+  const [departmentOption, setDepartmentOption] = useState('');
   const [authError, setAuthError] = useState('');
   const [submittingAuth, setSubmittingAuth] = useState(false);
+  const [colleges, setColleges] = useState([]);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const [googleSdkLoaded, setGoogleSdkLoaded] = useState(false);
   const [showGoogleRoleModal, setShowGoogleRoleModal] = useState(false);
@@ -54,6 +55,15 @@ function App() {
       setUser(currentUser);
     }
     setLoading(false);
+
+    // Fetch colleges list
+    api.get('colleges/')
+      .then((res) => {
+        setColleges(res.data || []);
+      })
+      .catch((err) => {
+        console.error("Failed to load colleges for registration", err);
+      });
   }, []);
 
   const decodeGoogleJwt = (token) => {
@@ -217,11 +227,6 @@ function App() {
           setSubmittingAuth(false);
           return;
         }
-        if (role === 'b2b_student' && departmentOption === 'Others' && !department) {
-          setAuthError('Please enter your department when selecting Others.');
-          setSubmittingAuth(false);
-          return;
-        }
 
         const payload = {
           username,
@@ -316,14 +321,23 @@ function App() {
     <div className="auth-screen">
       <div className="auth-container">
 
-        <div className="auth-intro">
-          <h1>PlagShield</h1>
-          <p className="auth-subtitle">
-            Secure plagiarism checks, role-based portals, and fast Turnitin verification in one place.
-          </p>
-        </div>
-
         <div className="auth-card glass-card">
+          
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px', fontWeight: '800', color: 'var(--primary)', marginBottom: '4px' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              PlagShield
+            </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+              {isLogin
+                ? 'Sign in to access your portal'
+                : 'Create your account and select a role'
+              }
+            </p>
+          </div>
+
           <div className="auth-tab-group">
             <button
               type="button"
@@ -341,140 +355,170 @@ function App() {
             </button>
           </div>
 
-          <div className="auth-action-note">
-            {isLogin
-              ? 'Use your email or user ID to access your portal quickly.'
-              : 'Register with your preferred role and link your account to the correct portal.'
-            }
-          </div>
-
-          <form onSubmit={handleAuthSubmit} className="auth-form">
+          <form onSubmit={handleAuthSubmit} className="auth-form" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             
             {authError && (
-              <div className="auth-alert">
+              <div className="auth-alert" style={{ padding: '10px 14px', margin: '4px 0' }}>
                 {authError}
               </div>
             )}
 
-            <div className="form-group" style={{ marginBottom: '0' }}>
-              <label className="form-label">User ID or Email</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                required 
-                placeholder="Enter user ID or email"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-
-            {!isLogin && (
+            {isLogin ? (
               <>
                 <div className="form-group" style={{ marginBottom: '0' }}>
-                  <label className="form-label">Role</label>
-                  <div className="role-select-grid">
-                    {[
-                      { value: 'b2c_student', label: 'B2C Student' },
-                      { value: 'b2b_student', label: 'B2B Student' },
-                      { value: 'college_admin', label: 'College Admin' },
-                      { value: 'super_admin', label: 'Super Admin' },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`role-pill ${role === option.value ? 'active' : ''}`}
-                        onClick={() => setRole(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="form-group" style={{ marginBottom: '0' }}>
-                  <label className="form-label">Email Address</label>
+                  <label className="form-label">User ID or Email</label>
                   <input 
-                    type="email" 
+                    type="text" 
                     className="form-control" 
                     required 
-                    placeholder="youremail@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter user ID or email"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    style={{ height: '38px' }}
                   />
-                  
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '0' }}>
+                  <label className="form-label">Password</label>
+                  <input 
+                    type="password" 
+                    className="form-control" 
+                    required 
+                    placeholder="••••••••"
+                    value={password}
+                    maxLength={8}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ height: '38px' }}
+                  />
                 </div>
               </>
-            )}
-
-            <div className="form-group" style={{ marginBottom: '0' }}>
-              <label className="form-label">Password</label>
-              <input 
-                type="password" 
-                className="form-control" 
-                required 
-                placeholder="••••••••"
-                value={password}
-                maxLength={8}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {!isLogin && (
-                <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Password must be exactly 8 characters, start with an uppercase letter, and include at least one special character.
-                </p>
-              )}
-            </div>
-
-            {!isLogin && (
+            ) : (
               <>
-                <div className="form-group" style={{ marginBottom: '0' }}>
-                  <label className="form-label">First Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter first name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value.replace(/[^A-Za-z]/g, ''))}
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: '0' }}>
-                  <label className="form-label">Last Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter last name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value.replace(/[^A-Za-z]/g, ''))}
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: '0' }}>
-                  <label className="form-label">Phone Number (WhatsApp alerts)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '58px', height: '42px', padding: '0 12px', borderRadius: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      +91
-                    </span>
-                    <input 
-                      type="tel" 
-                      className="form-control" 
-                      placeholder="1234567890"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      style={{ flex: 1, minWidth: 0 }}
-                    />
-                  </div>
-                </div>
-                {(role === 'college_admin' || role === 'b2b_student') && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div className="form-group" style={{ marginBottom: '0' }}>
-                    <label className="form-label">College ID</label>
+                    <label className="form-label">First Name</label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Enter college ID"
-                      value={collegeId}
-                      onChange={(e) => setCollegeId(e.target.value)}
+                      placeholder="First name"
+                      value={firstName}
+                      required
+                      onChange={(e) => setFirstName(e.target.value.replace(/[^A-Za-z]/g, ''))}
+                      style={{ height: '38px' }}
                     />
                   </div>
-                )}
+                  <div className="form-group" style={{ marginBottom: '0' }}>
+                    <label className="form-label">Last Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Last name"
+                      value={lastName}
+                      required
+                      onChange={(e) => setLastName(e.target.value.replace(/[^A-Za-z]/g, ''))}
+                      style={{ height: '38px' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div className="form-group" style={{ marginBottom: '0' }}>
+                    <label className="form-label">User ID</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      required 
+                      placeholder="Choose User ID"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      style={{ height: '38px' }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: '0' }}>
+                    <label className="form-label">Email Address</label>
+                    <input 
+                      type="email" 
+                      className="form-control" 
+                      required 
+                      placeholder="name@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      style={{ height: '38px' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div className="form-group" style={{ marginBottom: '0' }}>
+                    <label className="form-label">Password</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      required 
+                      placeholder="••••••••"
+                      value={password}
+                      maxLength={8}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={{ height: '38px' }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: '0' }}>
+                    <label className="form-label">Phone (WhatsApp)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '38px', borderRadius: '8px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '12px' }}>
+                        +91
+                      </span>
+                      <input 
+                        type="tel" 
+                        className="form-control" 
+                        required
+                        placeholder="10-digit number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        style={{ flex: 1, minWidth: 0, height: '38px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: (role === 'college_admin' || role === 'b2b_student') ? '1fr 1fr' : '1fr', gap: '8px' }}>
+                  <div className="form-group" style={{ marginBottom: '0' }}>
+                    <label className="form-label">Role</label>
+                    <select
+                      className="form-control"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', height: '38px', fontSize: '13px' }}
+                    >
+                      <option value="b2c_student">B2C Student</option>
+                      <option value="b2b_student">B2B Student</option>
+                      <option value="super_admin">Super Admin</option>
+                    </select>
+                  </div>
+
+                  {(role === 'college_admin' || role === 'b2b_student') && (
+                    <div className="form-group" style={{ marginBottom: '0' }}>
+                      <label className="form-label">College Name</label>
+                      <select
+                        className="form-control"
+                        value={collegeId}
+                        onChange={(e) => setCollegeId(e.target.value)}
+                        required
+                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', height: '38px', fontSize: '13px' }}
+                      >
+                        <option value="">Select College</option>
+                        {colleges.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.college_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
                 {role === 'b2b_student' && (
-                  <>
+                  <div style={{ display: 'grid', gridTemplateColumns: departmentOption === 'Others' ? '1fr 1fr' : '1fr', gap: '8px' }}>
                     <div className="form-group" style={{ marginBottom: '0' }}>
                       <label className="form-label">Department</label>
                       <select
@@ -489,8 +533,9 @@ function App() {
                             setDepartment(value);
                           }
                         }}
-                        style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}
+                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', height: '38px', fontSize: '13px' }}
                       >
+                        <option value="">Select Department (Optional)</option>
                         <option value="Computer Science">Computer Science</option>
                         <option value="Electronics">Electronics</option>
                         <option value="Mechanical">Mechanical</option>
@@ -504,14 +549,16 @@ function App() {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Enter your department"
+                          placeholder="Your department (optional)"
                           value={department}
                           onChange={(e) => setDepartment(e.target.value)}
+                          style={{ height: '38px' }}
                         />
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
+
                 {role === 'super_admin' && (
                   <div className="form-group" style={{ marginBottom: '0' }}>
                     <label className="form-label">Admin Secret</label>
@@ -519,18 +566,24 @@ function App() {
                       type="password"
                       className="form-control"
                       placeholder="Enter admin secret"
+                      required
                       value={adminSecret}
                       onChange={(e) => setAdminSecret(e.target.value)}
+                      style={{ height: '38px' }}
                     />
                   </div>
                 )}
+
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0' }}>
+                  Password requirements: 8 characters, starting with uppercase, containing at least one special character.
+                </p>
               </>
             )}
 
-            <button type="submit" className="btn btn-primary auth-btn-full" disabled={submittingAuth}>
+            <button type="submit" className="btn btn-primary auth-btn-full" disabled={submittingAuth} style={{ height: '40px', fontSize: '14px', marginTop: '6px' }}>
               {submittingAuth ? (
                 <div className="btn-loading">
-                  <div className="spinner" style={{ width: '16px', height: '16px' }}></div>
+                  <div className="spinner" style={{ width: '14px', height: '14px' }}></div>
                   Authenticating...
                 </div>
               ) : (
@@ -548,6 +601,7 @@ function App() {
             className="btn btn-secondary auth-btn-full oauth-btn" 
             onClick={handleGoogleLogin}
             disabled={submittingAuth || !googleClientId || !googleSdkLoaded}
+            style={{ height: '40px', fontSize: '14px' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.24 10.285V13.4h6.887c-.648 2.41-2.519 4.155-5.267 4.155-3.327 0-6.027-2.7-6.027-6.027s2.7-6.027 6.027-6.027c1.554 0 2.946.586 4.009 1.545l2.427-2.427C18.663 3.036 15.655 2 12.24 2 6.584 2 2 6.584 2 12.24s4.584 10.24 10.24 10.24c5.795 0 10.254-4.074 10.254-10.24 0-.695-.081-1.355-.223-1.955H12.24z"/>
@@ -557,8 +611,8 @@ function App() {
           {(!googleClientId || !googleSdkLoaded) && (
             <p className="auth-hint">
               {!googleClientId
-                ? <>Google OAuth is unavailable until you set <code>VITE_GOOGLE_CLIENT_ID</code> in <code>frontend/.env</code> and reload.</>
-                : 'Loading Google OAuth SDK... Please wait a moment or refresh the page if it does not appear.'
+                ? <>Google OAuth is unavailable until you set <code>VITE_GOOGLE_CLIENT_ID</code> in <code>frontend/.env</code>.</>
+                : 'Loading Google OAuth SDK...'
               }
             </p>
           )}
@@ -631,29 +685,23 @@ function App() {
                   >
                     <option value="b2c_student">B2C Student</option>
                     <option value="b2b_student">B2B Student</option>
-                    <option value="college_admin">College Admin</option>
                     <option value="super_admin">Super Admin</option>
                   </select>
                 </div>
 
-                {(googleRoleForSignup === 'college_admin' || googleRoleForSignup === 'super_admin') && (
+                {googleRoleForSignup === 'super_admin' && (
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                      {googleRoleForSignup === 'super_admin' ? 'Admin Secret' : 'College ID'}
+                      Admin Secret
                     </label>
                     <input
-                      type={googleRoleForSignup === 'super_admin' ? 'password' : 'text'}
-                      value={googleRoleForSignup === 'super_admin' ? googleAdminSecretForSignup : googleCollegeIdForSignup}
+                      type="password"
+                      value={googleAdminSecretForSignup}
                       onChange={(e) => {
-                        if (googleRoleForSignup === 'super_admin') {
-                          setGoogleAdminSecretForSignup(e.target.value);
-                          googleAdminSecretRef.current = e.target.value;
-                        } else {
-                          setGoogleCollegeIdForSignup(e.target.value);
-                          googleCollegeIdRef.current = e.target.value;
-                        }
+                        setGoogleAdminSecretForSignup(e.target.value);
+                        googleAdminSecretRef.current = e.target.value;
                       }}
-                      placeholder={googleRoleForSignup === 'super_admin' ? 'Enter admin secret' : 'Enter college ID'}
+                      placeholder="Enter admin secret"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -666,28 +714,34 @@ function App() {
                   </div>
                 )}
 
-                {googleRoleForSignup === 'b2b_student' && (
+                {(googleRoleForSignup === 'college_admin' || googleRoleForSignup === 'b2b_student') && (
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                      College ID
+                      College Name
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={googleCollegeIdForSignup}
                       onChange={(e) => {
                         setGoogleCollegeIdForSignup(e.target.value);
                         googleCollegeIdRef.current = e.target.value;
                       }}
-                      placeholder="Enter college ID"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
                         borderRadius: '8px',
                         border: '1px solid var(--border-color)',
                         background: 'var(--bg-secondary)',
-                        fontSize: '14px'
+                        fontSize: '14px',
+                        cursor: 'pointer'
                       }}
-                    />
+                    >
+                      <option value="">Select College</option>
+                      {colleges.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.college_name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -703,7 +757,7 @@ function App() {
                         setGoogleDepartmentForSignup(e.target.value);
                         googleDepartmentRef.current = e.target.value;
                       }}
-                      placeholder="Your department"
+                      placeholder="Your department (optional)"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -754,7 +808,7 @@ function App() {
                       cursor: 'pointer',
                       fontWeight: '500',
                       fontSize: '14px',
-                      opacity: (submittingAuth || (googleRoleForSignup !== 'b2c_student' && !googleCollegeIdForSignup)) ? 0.6 : 1
+                      opacity: (submittingAuth || ((googleRoleForSignup === 'college_admin' || googleRoleForSignup === 'b2b_student') && !googleCollegeIdForSignup) || (googleRoleForSignup === 'super_admin' && !googleAdminSecretForSignup)) ? 0.6 : 1
                     }}
                   >
                     {submittingAuth ? 'Authenticating...' : 'Continue with Google'}
