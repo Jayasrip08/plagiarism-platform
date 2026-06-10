@@ -226,7 +226,7 @@ export default function CollegePortal({ user }) {
                     </div>
                     {stats.low_credit_alert && (
                       <div style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '8px', fontWeight: '600' }}>
-                        ⚠️ Low balance! Less than 20% remaining.
+                        Low balance! Less than 20% remaining.
                       </div>
                     )}
                   </div>
@@ -313,7 +313,7 @@ export default function CollegePortal({ user }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '26px' }}>Submissions Audit Log (NAAC Verification)</h2>
               <button className="btn btn-accent" style={{ color: 'var(--bg-primary)' }} onClick={triggerExport}>
-                📥 Export CSV Report
+                Export CSV Report
               </button>
             </div>
 

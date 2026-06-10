@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 :root {
   /* Professional Slate & Royal Blue System */
   --bg-primary: #f8fafc;
@@ -155,18 +157,18 @@ a:hover {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  color: var(--text-muted);
+  gap: 12px;
+  padding: 10px 14px;
+  color: #64748b;
   border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: none;
   background: transparent;
   text-align: left;
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .nav-icon {
@@ -178,6 +180,8 @@ a:hover {
   justify-content: center;
   border-radius: 50%;
   background: rgba(30, 64, 175, 0.08);
+  color: var(--primary);
+  transition: all 0.15s ease-in-out;
 }
 
 .nav-badge {
@@ -191,22 +195,23 @@ a:hover {
 }
 
 .nav-link:hover {
-  background-color: var(--bg-tertiary);
-  color: var(--primary);
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.nav-link:hover .nav-icon {
+  background-color: rgba(30, 64, 175, 0.15);
 }
 
 .nav-link.active {
-  background-color: rgba(30, 64, 175, 0.08);
-  color: var(--primary);
-  border-left: 3px solid var(--primary);
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  background-color: #1e40af;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .nav-link.active .nav-icon {
-  background-color: rgba(30, 64, 175, 0.16);
-  color: var(--primary);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 /* Cards & Glassmorphism */

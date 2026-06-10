@@ -4,6 +4,16 @@ This guide provides the necessary commands to set up the PostgreSQL database, mi
 
 ---
 
+## Key Features & Professional Overhaul
+
+- **Slate & Royal Blue Design**: A modern, premium corporate styling with glassmorphism effects and clean layouts.
+- **Inter Typography**: Styled using the Inter font family for maximum readability.
+- **SVG Iconography**: All raw emojis have been replaced with elegant, professional SVG icons across the dashboard navigation and UI panels.
+- **Google OAuth Login Flow**: Streamlined login with automatic role selection registration options (supporting B2C Student, B2B Student, College Admin, and Super Admin) when no matching account is found.
+- **Security & Account Validation**: Removed outdated password length limitations (`maxLength` restriction) on login and registration fields to support secure passwords.
+
+---
+
 ## Prerequisites
 Ensure that a **PostgreSQL** database is running locally with the following credentials (configured in `core/settings.py`):
 - **Database Name**: `plagiarism_platform`
@@ -16,7 +26,7 @@ Ensure that a **PostgreSQL** database is running locally with the following cred
 
 ## 1. Backend Server Setup & Start
 
-Open a terminal at the root of the project (`e:/plagiarism-platform`) and run:
+Open a terminal at the root of the project (`d:/plagiarism-platform`) and run:
 
 ```powershell
 # 1. Activate the Python virtual environment
@@ -37,7 +47,7 @@ The Django API will be live at: `http://127.0.0.1:8000/`
 
 ## 2. Frontend Server Setup & Start
 
-Open a second terminal at the root of the project (`e:/plagiarism-platform`) and run:
+Open a second terminal at the root of the project (`d:/plagiarism-platform`) and run:
 
 ```powershell
 # 1. Navigate to the frontend folder

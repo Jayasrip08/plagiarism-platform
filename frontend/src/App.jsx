@@ -135,7 +135,14 @@ function App() {
       setShowGoogleRoleModal(false);
     } catch (e) {
       console.error('Google login failed', e);
-      setAuthError(extractApiErrorMessage(e) || e.message || 'Google OAuth login failed.');
+      const apiErr = extractApiErrorMessage(e);
+      if (isLogin && (apiErr?.includes('No account found') || e.message?.includes('No account found'))) {
+        setIsLogin(false);
+        setShowGoogleRoleModal(true);
+        setAuthError('No account found for this Google email. Please select a role to register.');
+      } else {
+        setAuthError(apiErr || e.message || 'Google OAuth login failed.');
+      }
     } finally {
       setSubmittingAuth(false);
     }
@@ -386,7 +393,6 @@ function App() {
                     required 
                     placeholder="••••••••"
                     value={password}
-                    maxLength={8}
                     onChange={(e) => setPassword(e.target.value)}
                     style={{ height: '38px' }}
                   />
@@ -457,7 +463,6 @@ function App() {
                       required 
                       placeholder="••••••••"
                       value={password}
-                      maxLength={8}
                       onChange={(e) => setPassword(e.target.value)}
                       style={{ height: '38px' }}
                     />
@@ -492,6 +497,7 @@ function App() {
                     >
                       <option value="b2c_student">B2C Student</option>
                       <option value="b2b_student">B2B Student</option>
+                      <option value="college_admin">College Admin</option>
                       <option value="super_admin">Super Admin</option>
                     </select>
                   </div>
@@ -685,6 +691,7 @@ function App() {
                   >
                     <option value="b2c_student">B2C Student</option>
                     <option value="b2b_student">B2B Student</option>
+                    <option value="college_admin">College Admin</option>
                     <option value="super_admin">Super Admin</option>
                   </select>
                 </div>
